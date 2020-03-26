@@ -1,0 +1,11 @@
+Diseases or Functions,Genes,FDR
+Angiogenesis,ALCAM CDKN2B COL4A2 DAB2IP PDGFC PECAM1 SMOC2 VAV3,0.0188
+Carotid artery disease,NNMT VAV3,0.034
+Development of vasculature,ALCAM CDKN2B COL4A2 DAB2IP NPAS3 PDGFC PECAM1 SMOC2 VAV3,0.0188
+Endothelial cell development,COL4A2 PDGFC PECAM1 SMOC2,0.0291
+Formation of blood vessel,CDKN2B COL4A2 PECAM1,0.0242
+Formation of endothelial tube,COL4A2 PECAM1,0.0291
+Function of endothelial tissue,PECAM1 VAV3,0.0188
+Migration of endothelial cells,ALCAM COL4A2 PECAM1 SMOC2 VAV3,0.0188
+Quantity of endothelial cells,ALCAM PDGFC,0.023
+Vasculogenesis,ALCAM CDKN2B COL4A2 PDGFC PECAM1 SMOC2,0.0242

@@ -1,0 +1,21 @@
+# Build Outputs
+*.docx
+*.log
+*.pdf
+*.html
+
+# Big figures
+*.tiff
+
+# Original data and big tables
+plink_out/
+RDS/
+phs*
+
+# OSX crap
+.DS_store
+
+# R stuff
+.Rhistory
+.Rproj.user
+*.Rproj

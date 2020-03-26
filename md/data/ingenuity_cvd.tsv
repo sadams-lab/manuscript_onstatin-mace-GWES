@@ -1,0 +1,48 @@
+© 2000-2020 QIAGEN. All rights reserved.
+
+Categories	Function	Diseases or Functions Annotation	B-H p-value	Molecules	# Molecules
+Cardiovascular System Development and Function	abnormal morphology	Abnormal morphology of tunica media	5.81E-02	VAV3	1
+Cardiovascular System Development and Function,Cell-To-Cell Signaling and Interaction	adhesion	Adhesion of endothelial cells	5.90E-02	ALCAM,PECAM1	2
+Cardiovascular System Development and Function,Tissue Development	adhesion	Adhesion of endothelial tissue	6.85E-02	VAV3	1
+Cardiovascular System Development and Function,Organismal Development	angiogenesis	Angiogenesis	1.88E-02	ALCAM,CDKN2B,COL4A2,DAB2IP,PDGFC,PECAM1,SMOC2,VAV3	8
+Cardiovascular System Development and Function,Cellular Development,Cellular Function and Maintenance,Cellular Growth and Proliferation,Organismal Development,Tissue Development	angiogenesis	Angiogenesis of vascular endothelial cells	4.72E-02	SMOC2	1
+Cardiovascular Disease,Organismal Injury and Abnormalities	carotid artery disease	Carotid artery disease	3.40E-02	NNMT,VAV3	2
+Cardiovascular System Development and Function,Cell-To-Cell Signaling and Interaction,Cellular Assembly and Organization	cell-cell adhesion	Cell-cell adhesion of lymphatic endothelial cells	1.88E-02	ALCAM	1
+Cardiovascular Disease,Hematological Disease,Ophthalmic Disease,Organismal Injury and Abnormalities	central retinal vein occlusion	Central retinal vein occlusion	4.91E-02	NNMT	1
+Cardiovascular Disease,Organ Morphology,Organismal Development,Organismal Injury and Abnormalities,Renal and Urological Disease,Renal and Urological System Development and Function	congestion	Congestion of glomerular capillary	2.42E-02	PECAM1	1
+Cardiovascular System Development and Function	development	Development of vasculature	1.88E-02	ALCAM,CDKN2B,COL4A2,DAB2IP,NPAS3,PDGFC,PECAM1,SMOC2,VAV3	9
+Cardiovascular System Development and Function,Cellular Development,Cellular Function and Maintenance,Cellular Growth and Proliferation,Organismal Development,Tissue Development	development	Endothelial cell development	2.91E-02	COL4A2,PDGFC,PECAM1,SMOC2	4
+Cardiovascular System Development and Function,Cellular Development	differentiation	Differentiation of endothelial cell lines	3.40E-02	PECAM1	1
+Cardiovascular Disease,Organismal Injury and Abnormalities	fibrosis	Fibrosis of heart	8.67E-02	PDGFC,VAV3	2
+Cardiovascular Disease,Nervous System Development and Function,Neurological Disease,Organismal Development,Organismal Injury and Abnormalities,Tissue Morphology	flushing response	Flushing response	5.81E-02	NNMT	1
+Cardiovascular System Development and Function,Organismal Development	formation	Formation of blood vessel	2.42E-02	CDKN2B,COL4A2,PECAM1	3
+Cardiovascular System Development and Function,Tissue Development	formation	Formation of endothelial tube	2.91E-02	COL4A2,PECAM1	2
+Cardiovascular System Development and Function,Tissue Development	function	Function of endothelial tissue	1.88E-02	PECAM1,VAV3	2
+Cardiovascular System Development and Function,Tissue Development	function	Function of endothelial barrier	3.08E-02	PECAM1	1
+Cardiovascular System Development and Function,Cellular Function and Maintenance,Tissue Development	function	Function of vascular endothelial cells	7.47E-02	VAV3	1
+Cardiovascular Disease,Connective Tissue Disorders,Hematological Disease,Organismal Injury and Abnormalities,Skeletal and Muscular Disorders	ghosal hematodiaphyseal dysplasia syndrome	Ghosal hematodiaphyseal dysplasia syndrome	1.88E-02	TBXAS1	1
+Cancer,Cardiovascular Disease,Organismal Injury and Abnormalities	hemangioma	Hemangioma	5.61E-02	ALCAM,PDGFC	2
+Cardiovascular Disease,Hematological Disease,Hereditary Disorder,Metabolic Disease,Organismal Injury and Abnormalities	homozygous familial hypercholesterolemia	Homozygous familial hypercholesterolemia	6.05E-02	NNMT	1
+Cardiovascular Disease,Inflammatory Disease,Organismal Injury and Abnormalities	Kawasaki disease	Kawasaki disease	9.62E-02	NAALADL2	1
+Cardiovascular Disease	leakage	Leakage of blood vessel	5.61E-02	PDGFC	1
+Cardiovascular System Development and Function,Cellular Movement	migration	Migration of endothelial cells	1.88E-02	ALCAM,COL4A2,PECAM1,SMOC2,VAV3	5
+Cardiovascular System Development and Function,Cellular Movement,Immune Cell Trafficking	migration	Migration of lymphatic endothelial cells	6.60E-02	ALCAM	1
+Cardiovascular Disease,Hematological Disease,Metabolic Disease,Organismal Injury and Abnormalities	mixed dyslipidemia	Mixed dyslipidemia	5.48E-02	NNMT	1
+Cardiovascular System Development and Function,Cell Morphology	morphology	Morphology of endothelial cell lines	5.83E-02	PECAM1	1
+Cancer,Cardiovascular System Development and Function,Organismal Injury and Abnormalities,Tumor Morphology	neovascularization	Neovascularization of tumor	5.81E-02	DAB2IP	1
+Cardiovascular System Development and Function	neovascularization	Neovascularization	7.04E-02	DAB2IP,PDGFC	2
+Cardiovascular Disease,Organismal Injury and Abnormalities	occlusion	Occlusion of carotid artery	7.47E-02	VAV3	1
+Cardiovascular System Development and Function,Cellular Development,Cellular Function and Maintenance,Cellular Growth and Proliferation,Organismal Development,Tissue Development	proliferation	Proliferation of endothelial progenitor cells	5.48E-02	PDGFC	1
+Cardiovascular System Development and Function,Cellular Development,Cellular Function and Maintenance,Cellular Growth and Proliferation,Organismal Development,Tissue Development	proliferation	Proliferation of endothelial cells	5.59E-02	COL4A2,PDGFC,PECAM1	3
+Cardiovascular System Development and Function,Cellular Development,Cellular Function and Maintenance,Cellular Growth and Proliferation,Organismal Development,Tissue Development	proliferation	Proliferation of microvascular endothelial cells	8.58E-02	PECAM1	1
+Cardiovascular System Development and Function,Tissue Morphology	quantity	Quantity of endothelial cells	2.30E-02	ALCAM,PDGFC	2
+Cardiovascular System Development and Function,Lymphoid Tissue Structure and Development,Organismal Development,Tissue Morphology	quantity	Quantity of lymphatic endothelial cells	3.08E-02	ALCAM	1
+Cardiovascular Disease,Tissue Morphology	regression	Regression of blood vessel	5.48E-02	PDGFC	1
+Cardiovascular System Development and Function	restoration	Restoration of vasculature	1.88E-02	PECAM1	1
+Cardiovascular Disease,Hematological Disease,Organismal Injury and Abnormalities	size	Size of thrombus	5.08E-02	PECAM1	1
+Cardiovascular Disease,Hematological Disease,Organismal Injury and Abnormalities	thrombus	Thrombus	9.65E-02	NNMT,PECAM1	2
+Cardiovascular System Development and Function,Cell Morphology,Cellular Development,Organismal Development,Tissue Development	tubulation	Tubulation of lymphatic endothelial cells	4.72E-02	ALCAM	1
+Cardiovascular System Development and Function,Cell Morphology,Cellular Development,Organismal Development,Tissue Development	tubulation	Tubulation of endothelial cells	5.08E-02	ALCAM,PECAM1	2
+Cardiovascular System Development and Function,Cell Morphology,Cellular Development,Organismal Development,Tissue Development	tubulation	Tubulation of microvascular endothelial cells	7.05E-02	PECAM1	1
+Cardiovascular System Development and Function,Organismal Development	vasculogenesis	Vasculogenesis	2.42E-02	ALCAM,CDKN2B,COL4A2,PDGFC,PECAM1,SMOC2	6
+Cardiovascular Disease,Ophthalmic Disease,Organismal Injury and Abnormalities	venous retinal branch occlusion	Venous retinal branch occlusion	4.72E-02	NNMT	1
