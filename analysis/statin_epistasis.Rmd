@@ -1,0 +1,411 @@
+---
+title: "RF-IFRS Analysis for Genome Wide Epistasis Study of On-Statin Cardiovascular Events"
+always_allow_html: yes
+output: html_notebook
+---
+
+# Data Pre-Processing
+
+Controlled access data were obtained from dbGaP. 
+These cannot be distributed here, but readers may request access to the data files through dbGaP: https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000963.v1.p1
+
+Data files obtained were in PLINK format and annotated against the GRCh37 manifest file from Illumina. 
+Pre-processing steps are enumerated below: 
+
+1. Recode XY pseudoautosomal region with: 
+
+```{bash, message = FALSE, eval=FALSE}
+plink --bfile <file prefix> --make-bed --merge-x --out merge_x
+```
+
+2. Convert to VCF file
+
+```{bash, message = FALSE, eval=FALSE}
+plink --bfile <file_prefix> --recode vcf-iid bgz --out <vcf out prefix> --output-chr MT 
+```
+
+The last bit tells it to use X, Y, and MY rather than 23, 24, 26
+
+4. Remove 0 chr/pos and apply updated manifest file to switch positions to GRCh38
+
+We sought to reprocess those data to reflect GRCh38 positions using the newest manifest for the array, also to rescue missing data from the GRCh37 manifest. 
+
+```{bash, message = FALSE, eval=FALSE}
+python scripts/clean_vcf.py <GRCh38 manifest> <file_prefix.vcf.gz> | bcftools sort -Oz > <file_prefix>.recode.sort.vcf.gz
+```
+
+5. Filter by maf (0.01)
+
+```{bash, message = FALSE, eval=FALSE}
+bcftools view --min-af 0.01 <file_prefix>.recode.sort.vcf.gz
+```
+
+6. Remove duplicate markers (because these are common in these array files)
+
+```{bash, message = FALSE, eval=FALSE}
+bcftools norm --rm-dup none phs000963.remap.af001.vcf.gz -Oz --threads 4 > phs000963.remap.af001.nodup.vcf.gz
+```
+
+7. Fix pheno file with correct IDs
+
+8. Prep the ped file
+
+```{bash, message = FALSE, eval=FALSE}
+awk -F "," 'FNR > 1 {print $1"\t"$1"\t"($4=="F"?2:1)"\t"($10+1)}' phs000963.pheno.csv
+```
+
+9. Run PLINK with MACE phenotype
+
+```{bash, message = FALSE, eval=FALSE}
+plink --tfile phs000963.remap.af01.nodup.autosomes --pheno MACE_PLINK_PHENO.pheno --make-bed --out phs000963.remap.af01.nodup.autosomes.MACE --allow-no-sex
+plink --bfile phs000963.remap.af01.nodup.autosomes.MACE --allow-no-sex --assoc
+```
+
+10. Convert VCF to tped for GenABEL: 
+
+```{bash, message = FALSE, eval=FALSE}
+plink --vcf <vcffile> --make-bed --recode transpose
+```
+
+# Analysis with Random Forest - Iterative Feature Reduction and Selection (RF-IFRS)
+
+## Required Libraries
+
+```{r, message = FALSE, eval=FALSE}
+# Need GenABEL package, which is not maintained 
+
+#devtools::install_url("https://cran.r-project.org/src/contrib/Archive/GenABEL.data/GenABEL.data_1.0.0.tar.gz")
+#devtools::install_url("https://cran.r-project.org/src/contrib/Archive/GenABEL/GenABEL_1.8-0.tar.gz")
+
+#remotes::install_github("silkeszy/Pomona") # Not actually used
+
+require(tidyverse)
+require(GenABEL)
+require(ranger)
+require(recipes)
+library(sjmisc)
+
+source("functions/ranger_epistasis.R")
+source("functions/r2VIM.R")
+```
+
+## Convert tped file to GenABEL
+
+Convert remapped tped files to genabel. 
+
+```{r, message = FALSE, eval=FALSE}
+convert.snp.tped(tpedfile = "analysis/plink/phs000963.remap.af01.nodup.autosomes.tped", 
+                 tfamfile = "analysis/plink/phs000963.remap.af01.nodup.autosomes.tfam", 
+                 outfile = "phs000963.remap.af01.nodup.autosomes.genabel", 
+                 strand = "+")
+```
+
+Load genabel into environment. 
+
+```{r, message = FALSE, eval=FALSE}
+geno_pheno <- load.gwaa.data(phenofile = "analysis/pheno/phs000963.pheno_MACE.txt", 
+               genofile = "phs000963.remap.af01.nodup.autosomes.genabel")
+```
+
+## Initial crude selection with Random Forest
+
+Compute case weights and create a RF with ranger. 
+
+```{r, message = FALSE, eval=FALSE}
+phdata(geno_pheno)$MACE_EVENT <- factor(phdata(geno_pheno)$MACE_EVENT)
+
+Y = phdata(geno_pheno)$MACE_EVENT
+
+w <- 1/table(Y)
+w <- w/sum(w)
+
+weights <- rep(0, length(Y))
+weights[Y == 0] <- w['0']
+weights[Y == 1] <- w['1']
+
+rg.mace <- ranger(MACE_EVENT ~ .,
+                  case.weights = weights,
+                  geno_pheno,
+                  importance = 'impurity_corrected',
+                  num.trees = 1000,
+                  mtry = round(0.333 * geno_pheno@gtdata@nsnps),
+                  write.forest = FALSE)
+#
+mace.importance <- data.frame(as.list(importance(rg.mace)))
+mace <- t(mace.importance)
+write.csv(data.frame(mace), "importance.csv", row.names = TRUE)
+#
+mace_p <- importance_pvalues(rg.mace)
+#
+write.csv(data.frame(mace_p), "importance_p.csv", row.names = TRUE)
+```
+
+## Fine Feature Selection with r2VIM
+
+Pull results from crude selection and use to subset the dataset, then run r2VIM. 
+
+```{r, message = FALSE, eval=FALSE}
+vars <- read_csv("importance_p.csv") %>% 
+  mutate(var = X1) %>% 
+  filter(pvalue < 0.01) %>% 
+  filter(var != "sex")
+
+geno_pheno_fine <- geno_pheno[,vars$var]
+
+phdata(geno_pheno_fine)$MACE_EVENT <- factor(phdata(geno_pheno_fine)$MACE_EVENT)
+
+Y = phdata(geno_pheno_fine)$MACE_EVENT
+
+w <- 1/table(Y)
+w <- w/sum(w)
+
+weights <- rep(0, length(Y))
+weights[Y == 0] <- w['0']
+weights[Y == 1] <- w['1']
+
+var_r2vim <- var.sel.r2vim(formula = MACE_EVENT ~ .,
+                           data = geno_pheno_fine,
+                           no.runs = 10,
+                           factor = 1,
+                           ntree = 10000,
+                           mtry.prop = 0.333,
+                           nodesize.prop = 0.1,
+                           no.threads = 16,
+                           method = "ranger",
+                           type = "classification",
+                           case.weights = weights)
+
+write.csv(var_r2vim$info, "var_r2vim.csv", row.names = TRUE)
+```
+
+Run 'n+1' random forest for analysis. 
+Must have the same parameters as the r2VIM RFs.
+
+```{r, message = FALSE, eval=FALSE}
+r2vim_top <- read_csv("var_r2vim.csv") %>% 
+  filter(rel.vim.min > 1) %>% 
+  dplyr::select(VAR = X1)
+
+vars <- read_csv("importance_p.csv") %>% 
+  mutate(var = X1) %>% 
+  filter(pvalue < 0.01) %>% 
+  filter(var != "sex")
+
+geno_pheno_fine <- geno_pheno[,vars$var]
+
+phdata(geno_pheno_fine)$MACE_EVENT <- factor(phdata(geno_pheno_fine)$MACE_EVENT)
+
+Y = phdata(geno_pheno_fine)$MACE_EVENT
+
+w <- 1/table(Y)
+w <- w/sum(w)
+
+weights <- rep(0, length(Y))
+weights[Y == 0] <- w['0']
+weights[Y == 1] <- w['1']
+
+mod_mtry <- floor(0.333 * geno_pheno_fine@gtdata@nsnps)
+mod_num.trees <- 10000
+nodesize <- floor(0.1 * nrow(geno_pheno_fine@gtdata))
+
+rg.mace <- ranger(MACE_EVENT ~ ., 
+                  probability = FALSE,
+                  min.node.size = nodesize,
+                  seed = 1017,
+                  case.weights = weights,
+                  geno_pheno_fine,
+                  importance = "permutation", 
+                  scale.permutation.importance = FALSE,
+                  num.trees = mod_num.trees,
+                  mtry = mod_mtry,
+                  write.forest = TRUE)
+
+rg.mace$forest$independent.variable.names <- c(rg.mace$forest$independent.variable.names, geno_pheno_fine@gtdata@snpnames)
+
+saveRDS(rg.mace, "r2vim_11.RDS")
+```
+
+## Analysis of RF structure
+
+Uses model and results from the above steps along with the methods in ensemble_epistasis.R. 
+
+1. Generate data for paired selection frequency (used in figure)
+
+```{r, message = FALSE, eval=FALSE}
+var_pairs <- arrangements::combinations(r2vim_top$VAR, 2)
+
+pairons <- mapply(
+  FUN = function(v1, v2) {pair_nums(v1, v2, rg.mace)},
+  v1 = var_pairs[,1], v2 = var_pairs[,2], SIMPLIFY = FALSE)
+
+names(pairons) <- c(1:length(pairons))
+
+pair_data <- as.data.frame(apply(data.frame(do.call(rbind, pairons)), MARGIN = 2, unlist), stringsAsFactors = FALSE)
+
+
+pair_data$var1_prob <- as.numeric(pair_data$v1_c) / 10000
+pair_data$var2_prob <- as.numeric(pair_data$v2_c) / 10000
+pair_data$v12_prob <- (pair_data$var1_prob * pair_data$var2_prob)
+
+write.csv(pair_data, "pair_data.csv", quote = FALSE)
+```
+
+2. Run full ensemble methods
+
+```{r, message = FALSE, eval=FALSE}
+  
+ensemble_methods <- mapply(
+  FUN = function(v1, v2) {validate_epistasis(v1, v2, model = rg.mace)},
+  v1 = var_pairs[,1], v2 = var_pairs[,2], SIMPLIFY = FALSE)
+
+names(ensemble_methods) <- c(1:length(ensemble_methods))
+
+results_to_row <- function(e, v1, v2) {
+  return(list(
+    "Var1" = v1,
+    "Var2" = v2,
+    "PairedSF" = e$m1_1,
+    "SelectionAsymmetryP" = fisher_p_method(c(e$m3_1, e$m3_2))
+  ))
+}
+
+ensemble_results <- mapply(FUN = function(e, v1, v2) {results_to_row(e, v1, v2)},
+                           e = ensemble_methods, 
+                           v1 = var_pairs[,1],
+                           v2 = var_pairs[,2], 
+                           SIMPLIFY = FALSE)
+
+ensemble_data <- as.data.frame(apply(data.frame(do.call(rbind, ensemble_results)), MARGIN = 2, unlist), stringsAsFactors = FALSE)
+
+ensemble_significant <- ensemble_data %>% 
+  mutate(Var1 = str_replace(Var1, "-", ".")) %>% 
+  mutate(Var2 = str_replace(Var2, "-", ".")) %>% 
+  mutate(PairedSF = as.numeric(PairedSF)) %>%  
+  mutate(SelectionAsymmetryP = as.numeric(SelectionAsymmetryP))
+
+ensemble_final <- ensemble_significant %>% 
+  mutate(ENSEMBLE_P = apply(
+          ensemble_significant, 
+          FUN = function(x) {
+            fisher_p_method(as.numeric(c(x["PairedSF"], x["SelectionAsymmetryP"])))
+          }, 
+          MARGIN = 1
+        )) %>% 
+  mutate(fdr = p.adjust(ENSEMBLE_P, method = "fdr")) %>% 
+  filter(fdr < 0.05)
+
+write.csv(ensemble_final, "ensemble_final.csv", quote = F)
+
+```
+
+3. Generate networks
+
+Basis for figure with decision trees. 
+
+```{r, message = FALSE, eval=FALSE}
+pheno <- data.frame(geno_pheno_fine)
+geno <- data.frame(GenABEL::as.character.gwaa.data(geno_pheno_fine[,r2vim_top[r2vim_top$VAR != "sex",]$VAR]))
+geno_pheno_min <- cbind(pheno, geno)[,-1]
+
+test_dummy <- function(df, outcome, var1, var2) {
+  v1 <- str_replace(var1, "-", ".")
+  v2 <- str_replace(var2, "-", ".")
+  v1_dummy <- df %>% 
+    sjmisc::to_dummy(v1)
+  v1_cols <- colnames(v1_dummy)
+  v2_dummy <- df %>% 
+    sjmisc::to_dummy(v2)
+  v2_cols <- colnames(v2_dummy)
+  combos <- expand.grid(v1_cols, v2_cols)
+  outs <- apply(combos, MARGIN = 1, function(x) {
+    df_t <- v1_dummy %>% 
+      dplyr::select(x[[1]]) %>% 
+      bind_cols(v2_dummy %>% dplyr::select(x[[2]])) %>% 
+      bind_cols(df %>% dplyr::select(outcome))
+    mod <- glm(data = df_t, formula = as.formula(paste(outcome, "~ .^2", sep = "")), family = "binomial")
+    if (length(coefficients(summary(mod))[,4] == 4)) {
+      p = coefficients(summary(mod))[,4][4]
+    } else {
+      p = NA
+    }
+    return(p)
+  })
+  return(list("p" = min(outs), "v1" = var1, "v2" = var2))
+}
+
+dummy_reg <- mapply(
+  FUN = function(v1, v2) {test_dummy(geno_pheno_min, "MACE_EVENT", v1, v2)},
+  v1 = ensemble_final$Var1, v2 = ensemble_final$Var2, SIMPLIFY = FALSE)
+
+names(dummy_reg) <- 1:length(dummy_reg)
+
+dummy_reg_df <- as.data.frame(apply(data.frame(do.call(rbind, dummy_reg)), MARGIN = 2, unlist), stringsAsFactors = FALSE) %>% 
+  mutate(p = as.numeric(p)) %>% 
+  mutate(fdr = p.adjust(p, method = "fdr")) #%>% 
+  filter(fdr < 0.05)
+
+write.csv(dummy_reg_df, "sig_pairs.csv")
+
+unique_vars <- unique(c(dummy_reg_df$v1, dummy_reg_df$v2))
+
+get_networks <- function(df, var) {
+  
+  unique_vars <- unique(c(df$v1, df$v2))
+  a <- df %>% 
+    filter(v1 == var | v2 == var) %>% 
+    dplyr::select(v1, v2)
+  b <- unique(c(a$v1, a$v2))
+  return(b)
+  
+}
+
+networks <- unique(lapply(unique_vars, function(x) {get_networks(dummy_reg_df, x)}))
+
+narrow_networks <- function(networks) {
+
+  final_networks <- list()
+  merged <- c()
+  i <- 1
+  k <- 1
+  for (network in networks) {
+    network_copy = network
+    s <- 1
+    for (subnet in networks) {
+      if (sum(subnet %in% network) > 0 && subnet != network) {
+        network_copy <- unique(c(network_copy, subnet))
+        merged <- c(merged, s)
+      }
+      s <- s + 1
+    }
+    if (!(i %in% merged)){
+      final_networks[[k]] = sort(network_copy)
+      k <- k + 1
+    }
+    i <- i + 1
+  }
+  final_final_networks <- unique(final_networks)
+  i <- 1
+  for (network in final_networks) {
+    drop <- FALSE
+    for (subnetwork in final_networks) {
+      if ((sum(network %in% subnetwork) == length(network) && length(subnetwork) > length(network))) {
+        drop <- TRUE
+      }
+    }
+    if (drop == TRUE) {
+      final_final_networks[[i]] <- "NA"
+    }
+    i <- i + 1
+  }
+  final_final_networks <- final_final_networks[final_final_networks!="NA"]
+  return(unique(final_final_networks))
+}
+
+final_networks <- narrow_networks(networks)
+final_networks <- narrow_networks(final_networks)
+final_networks <- narrow_networks(final_networks)
+
+saveRDS(final_networks, "final_networks.rds")
+saveRDS(geno_pheno_min, "geno_pheno_min.rds")
+
+```
