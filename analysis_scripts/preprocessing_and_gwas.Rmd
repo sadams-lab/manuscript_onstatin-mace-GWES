@@ -21,9 +21,10 @@ output: html_notebook
 
 The last bit tells it to use X, Y, and MY rather than 23, 24, 26
 
-4. Remove 0 chr/pos and apply updated manifest file
-
-clean_vcf.py
+4. Remove 0 chr/pos and apply updated manifest file to switch positions to GRCh38
+```
+python clean_vcf.py
+```
 
 Pipe into ```bcftools sort -Oz```
 
